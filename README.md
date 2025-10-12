@@ -2,7 +2,7 @@
 
 Real-time squat form analysis using computer vision. Get instant feedback on your depth and technique while you lift.
 
-## 🚀 Try it live: [Launch App](https://ppalak29.github.io/fitness-form-coach/)
+## Try it live: [Launch App](https://ppalak29.github.io/fitness-form-coach/)
 
 ## Features
 - Real-time pose detection
@@ -13,7 +13,7 @@ Real-time squat form analysis using computer vision. Get instant feedback on you
 
 ## How to use
 1. Open the app on your phone
-2. Prop phone somewhere with full body visible
+2. Prop phone somewhere with lower body visible
 3. Stand SIDEWAYS to camera
 4. Stand still for 2 seconds
 5. Start squatting!
