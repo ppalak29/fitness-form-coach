@@ -2,6 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Squat Form Coach</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
@@ -97,6 +98,20 @@
             padding: 10px;
             font-size: 16px;
             z-index: 10;
+        }
+        @media (max-width: 768px) {
+            button {
+                bottom: 20px;
+                padding: 12px 24px;
+                font-size: 16px;
+            }
+            
+            #reset { right: 20px; }
+            #quit { right: 130px; }
+            
+            #reps { font-size: 48px; }
+            #angle { font-size: 24px; }
+            #feedback { font-size: 50px; }
         }
     </style>
 </head>
