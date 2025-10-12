@@ -250,13 +250,14 @@
                                 stage = 'down';
                                 repCount++;
                                 repsEl.textContent = repCount;
+                                playBeep();  // Beep happens HERE, once per rep
                             }
 
                             // FEEDBACK
                             if (angle < 95) {
                                 feedbackEl.textContent = 'GOOD DEPTH!';
                                 feedbackEl.className = 'good';
-                                if (stage === 'down') playBeep();
+                                // if (stage === 'down') playBeep();
                             } else if (angle < 100) {
                                 feedbackEl.textContent = 'ALMOST!';  // Still counts
                                 feedbackEl.className = 'warn';
