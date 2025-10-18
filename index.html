@@ -117,7 +117,7 @@
 </head>
 <body>
     <div id="container">
-        <div id="instructions">Stand SIDEWAYS • R = Reset • Q = Quit</div>
+        <div id="instructions">Stand SIDEWAYS • R = Reset • Q = Quit • V = Toggle Video</div>
         <video id="video" autoplay playsinline></video>
         <canvas id="canvas"></canvas>
         <div id="stats">
@@ -127,6 +127,7 @@
         <div id="feedback"></div>
         <button id="reset">RESET</button>
         <button id="quit">QUIT</button>
+        <button id="toggleVideo" style="bottom: 30px; left: 30px; right: auto;">SKELETON ONLY</button>
     </div>
 
     <script>
@@ -141,6 +142,7 @@
         let stage = null;
         let isReady = false;
         let readyTimer = null;
+        let showVideo = false; 
 
         function calculateAngle(a, b, c) {
             const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
@@ -194,7 +196,13 @@
 
             ctx.save();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+            // Draw video or black background based on toggle
+            if (showVideo) {
+                ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+            } else {
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
 
             if (results.poseLandmarks) {
                 const landmarks = results.poseLandmarks;
@@ -297,11 +305,20 @@
             document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:32px;color:white">Session ended</div>';
         }
 
+        function toggleVideoFeed() {
+            showVideo = !showVideo;
+            const btn = document.getElementById('toggleVideo');
+            btn.textContent = showVideo ? 'VIDEO ON' : 'SKELETON ONLY';
+            btn.style.background = showVideo ? '#4CAF50' : '#ff3b30';
+        }
+
         document.getElementById('reset').onclick = reset;
         document.getElementById('quit').onclick = quit;
+        document.getElementById('toggleVideo').onclick = toggleVideoFeed;
         document.addEventListener('keydown', e => {
             if (e.key === 'r' || e.key === 'R') reset();
             if (e.key === 'q' || e.key === 'Q') quit();
+            if (e.key === 'v' || e.key === 'V') toggleVideoFeed();
         });
 
         const pose = new Pose({
