@@ -2,9 +2,7 @@
 
 Real-time workout tracking with automatic rep counting and form feedback. Built for home gym lifters who want to track their progress without a spotter.
 
-## 🚀 [Try it now](https://ppalak29.github.io/fitness-form-coach)
-
----
+## [Try it now](https://ppalak29.github.io/fitness-form-coach)
 
 ## Features
 
@@ -32,8 +30,6 @@ Real-time workout tracking with automatic rep counting and form feedback. Built 
 - Video feed (default) - see yourself
 - Skeleton-only mode - no video, just tracking points
 
----
-
 ## Supported Exercises
 
 ✅ **Squat** (side view)
@@ -43,8 +39,6 @@ Real-time workout tracking with automatic rep counting and form feedback. Built 
 ✅ **Overhead Press** (front view)
 - Tracks arm lockout
 - Checks left/right symmetry
-
----
 
 ## How to Use
 
@@ -69,16 +63,12 @@ Real-time workout tracking with automatic rep counting and form feedback. Built 
 - View history anytime
 - Track your progress
 
----
-
 ## Keyboard Shortcuts
 
 - **R** - Reset rep count
 - **Q** - Quit to main menu
 - **V** - Toggle video/skeleton mode
 - **S** - Save set
-
----
 
 ## Tech Stack
 
@@ -87,8 +77,6 @@ Real-time workout tracking with automatic rep counting and form feedback. Built 
 - **GitHub Pages** - Free hosting, no backend needed
 - **localStorage** - Session history stored locally (private)
 
----
-
 ## Privacy
 
 - Everything runs in your browser
@@ -96,16 +84,12 @@ Real-time workout tracking with automatic rep counting and form feedback. Built 
 - No account required
 - Session history stored locally on your device
 
----
-
 ## Limitations
 
 - **Requires good lighting** - Works best in well-lit areas
 - **Camera angle matters** - Follow setup instructions for each exercise
 - **Form analysis is basic** - Tracks depth/ROM, not advanced biomechanics
 - **2 exercises only** - More coming based on user feedback
-
----
 
 ## Roadmap
 
@@ -122,8 +106,6 @@ Real-time workout tracking with automatic rep counting and form feedback. Built 
 - Video recording of sets
 - Social features (share PRs)
 
----
-
 ## Feedback
 
 Built by a college student who lifts 6x/week. Looking for beta testers!
@@ -134,13 +116,9 @@ Built by a college student who lifts 6x/week. Looking for beta testers!
 
 **Using it regularly?** I'd love to hear how it's working for you.
 
----
-
 ## Acknowledgments
 
 - MediaPipe by Google for pose detection
 - Inspired by lifting 6x/week and hating manual rep counting
-
----
 
 **[Start Tracking →](https://ppalak29.github.io/fitness-form-coach)**
