@@ -2,8 +2,7 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Squat Form Coach</title>
+    <title>Form Coach</title>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -70,7 +69,6 @@
         
         button {
             position: absolute;
-            bottom: 30px;
             padding: 15px 30px;
             font-size: 18px;
             background: #f00;
@@ -85,8 +83,9 @@
             background: #f33;
         }
         
-        #reset { right: 30px; }
-        #quit { right: 150px; }
+        #reset { bottom: 30px; right: 30px; }
+        #quit { bottom: 30px; right: 150px; }
+        #toggleVideo { bottom: 30px; left: 30px; }
         
         #instructions {
             position: absolute;
@@ -99,6 +98,40 @@
             font-size: 16px;
             z-index: 10;
         }
+        
+        /* Exercise selection screen */
+        #exerciseSelection {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+        }
+        
+        #exerciseSelection h1 {
+            font-size: 48px;
+            margin-bottom: 50px;
+        }
+        
+        .exercise-btn {
+            position: static;
+            margin: 20px;
+            padding: 30px 60px;
+            font-size: 32px;
+            background: #4CAF50;
+            width: 400px;
+        }
+        
+        .exercise-btn:hover {
+            background: #66BB6A;
+        }
+        
         @media (max-width: 768px) {
             button {
                 bottom: 20px;
@@ -112,12 +145,26 @@
             #reps { font-size: 48px; }
             #angle { font-size: 24px; }
             #feedback { font-size: 50px; }
+            
+            .exercise-btn {
+                width: 80%;
+                font-size: 24px;
+                padding: 20px 40px;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="container">
-        <div id="instructions">Stand SIDEWAYS • R = Reset • Q = Quit • V = Toggle Video</div>
+    <!-- Exercise Selection Screen -->
+    <div id="exerciseSelection">
+        <h1>Choose Exercise</h1>
+        <button class="exercise-btn" onclick="startExercise('squat')">SQUAT</button>
+        <button class="exercise-btn" onclick="startExercise('overhead')">OVERHEAD PRESS</button>
+    </div>
+    
+    <!-- Main App -->
+    <div id="container" style="display: none;">
+        <div id="instructions"></div>
         <video id="video" autoplay playsinline></video>
         <canvas id="canvas"></canvas>
         <div id="stats">
@@ -127,7 +174,7 @@
         <div id="feedback"></div>
         <button id="reset">RESET</button>
         <button id="quit">QUIT</button>
-        <button id="toggleVideo" style="bottom: 30px; left: 30px; right: auto;">SKELETON ONLY</button>
+        <button id="toggleVideo">VIDEO ON</button>
     </div>
 
     <script>
@@ -137,12 +184,35 @@
         const repsEl = document.getElementById('reps');
         const angleEl = document.getElementById('angle');
         const feedbackEl = document.getElementById('feedback');
+        const instructionsEl = document.getElementById('instructions');
 
         let repCount = 0;
         let stage = null;
         let isReady = false;
         let readyTimer = null;
-        let showVideo = false; 
+        let showVideo = true;
+        let currentExercise = null;
+        let squatStartBackAngle = null;
+        let startKneeAngle = null;
+        let startBackAngle = null;
+
+        function playBeep() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                oscillator.frequency.value = 1800;
+                oscillator.type = 'sine';
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.08);
+            } catch(e) {}
+        }
 
         function calculateAngle(a, b, c) {
             const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
@@ -167,27 +237,27 @@
             return noseOffset < shoulderWidth * 0.3 ? 'front' : 'side_left';
         }
 
-        function playBeep() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                // Quick, clean "ding" sound
-                oscillator.frequency.value = 1800;  // Higher pitch
-                oscillator.type = 'sine';
-                
-                // Sharp attack, quick decay
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0.4, audioCtx.currentTime + 0.01);  // Fast attack
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);  // Quick decay
-                
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.08);  // Stop after 80ms
-            } catch(e) {}
+        function startExercise(exercise) {
+            currentExercise = exercise;
+            document.getElementById('exerciseSelection').style.display = 'none';
+            document.getElementById('container').style.display = 'block';
+            
+            // Set instructions based on exercise
+            if (exercise === 'squat') {
+                instructionsEl.textContent = 'Stand SIDEWAYS • Full body visible • R = Reset • V = Video';
+            } else if (exercise === 'overhead') {
+                instructionsEl.textContent = 'Stand FACING camera • Dumbbells at shoulders • Full body visible';
+            }
+            
+            // Start camera
+            const camera = new Camera(video, {
+                onFrame: async () => {
+                    await pose.send({image: video});
+                },
+                width: 1280,
+                height: 720
+            });
+            camera.start();
         }
 
         function onResults(results) {
@@ -196,7 +266,7 @@
 
             ctx.save();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Draw video or black background based on toggle
+            
             if (showVideo) {
                 ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
             } else {
@@ -211,88 +281,143 @@
                 // Draw skeleton
                 drawConnectors(ctx, landmarks, POSE_CONNECTIONS, {color: 'rgba(255,255,255,0.3)', lineWidth: 2});
 
-                if (view === 'side_left' || view === 'side_right') {
-                    const idx = view === 'side_left' ? [23, 25, 27] : [24, 26, 28];
-                    const hip = landmarks[idx[0]];
-                    const knee = landmarks[idx[1]];
-                    const ankle = landmarks[idx[2]];
-
-                    if (hip?.visibility > 0.3 && knee?.visibility > 0.3 && ankle?.visibility > 0.3) {
-                        // Draw key points
-                        ctx.fillStyle = '#0f0';
-                        [hip, knee, ankle].forEach(p => {
-                            ctx.beginPath();
-                            ctx.arc(p.x * canvas.width, p.y * canvas.height, 8, 0, 2 * Math.PI);
-                            ctx.fill();
-                        });
-
-                        const angle = calculateAngle(hip, knee, ankle);
-                        angleEl.textContent = Math.round(angle) + '°';
-
-                        // READY SEQUENCE - must stand still for 2 seconds
-                        if (!isReady) {
-                            if (angle > 165 && angle < 180) {
-                                if (!readyTimer) {
-                                    readyTimer = setTimeout(() => { 
-                                        isReady = true;
-                                    }, 2000);
-                                }
-                            } else {
-                                if (readyTimer) {
-                                    clearTimeout(readyTimer);
-                                    readyTimer = null;
-                                }
-                            }
-                            
-                            feedbackEl.textContent = 'STAND STILL (2s)';
-                            feedbackEl.className = '';
-                        } else {
-                            // REP COUNTING (only after ready)
-                            // REP COUNTING (only after ready)
-                            if (angle > 160) {
-                                stage = 'up';
-                            }
-
-                            // Count rep if below 100° (slightly more lenient than 95°)
-                            if (angle < 100 && stage === 'up') {
-                                stage = 'down';
-                                repCount++;
-                                repsEl.textContent = repCount;
-                                playBeep();  // Beep happens HERE, once per rep
-                            }
-
-                            // FEEDBACK
-                            if (angle < 95) {
-                                feedbackEl.textContent = 'GOOD DEPTH!';
-                                feedbackEl.className = 'good';
-                                // if (stage === 'down') playBeep();
-                            } else if (angle < 100) {
-                                feedbackEl.textContent = 'ALMOST!';  // Still counts
-                                feedbackEl.className = 'warn';
-                            } else if (angle < 120) {
-                                feedbackEl.textContent = 'GO DEEPER';  // Doesn't count
-                                feedbackEl.className = 'warn';
-                            } else {
-                                feedbackEl.textContent = '';
-                            }
-                        }
-                    } else {
-                        feedbackEl.textContent = 'BODY IN FRAME';
-                        feedbackEl.className = 'bad';
-                    }
-                } else if (view === 'front') {
-                    feedbackEl.textContent = 'TURN SIDEWAYS';
-                    feedbackEl.className = 'bad';
+                if (currentExercise === 'squat') {
+                    processSquat(landmarks, view);
+                } else if (currentExercise === 'overhead') {
+                    processOverheadPress(landmarks, view);
                 }
             }
 
             ctx.restore();
         }
 
+        function processSquat(landmarks, view) {
+            if (view === 'side_left' || view === 'side_right') {
+                const idx = view === 'side_left' ? [23, 25, 27] : [24, 26, 28];
+                const hip = landmarks[idx[0]];
+                const knee = landmarks[idx[1]];
+                const ankle = landmarks[idx[2]];
+
+                if (hip?.visibility > 0.3 && knee?.visibility > 0.3 && ankle?.visibility > 0.3) {
+                    ctx.fillStyle = '#0f0';
+                    [hip, knee, ankle].forEach(p => {
+                        ctx.beginPath();
+                        ctx.arc(p.x * canvas.width, p.y * canvas.height, 8, 0, 2 * Math.PI);
+                        ctx.fill();
+                    });
+
+                    const angle = calculateAngle(hip, knee, ankle);
+                    angleEl.textContent = Math.round(angle) + '°';
+
+                    if (!isReady && angle > 165) {
+                        if (!readyTimer) {
+                            readyTimer = setTimeout(() => { isReady = true; }, 2000);
+                        }
+                    } else if (angle < 165) {
+                        clearTimeout(readyTimer);
+                        readyTimer = null;
+                    }
+
+                    if (!isReady) {
+                        feedbackEl.textContent = 'HOLD STILL (2s)';
+                        feedbackEl.className = '';
+                    } else {
+                        if (angle > 160) stage = 'up';
+                        if (angle < 100 && stage === 'up') {
+                            stage = 'down';
+                            repCount++;
+                            repsEl.textContent = repCount;
+                            playBeep();
+                        }
+
+                        // Simple depth feedback only
+                        if (angle < 95) {
+                            feedbackEl.textContent = 'GOOD DEPTH!';
+                            feedbackEl.className = 'good';
+                        } else if (angle < 100) {
+                            feedbackEl.textContent = 'ALMOST!';
+                            feedbackEl.className = 'warn';
+                        } else if (angle < 120) {
+                            feedbackEl.textContent = 'GO DEEPER';
+                            feedbackEl.className = 'warn';
+                        } else {
+                            feedbackEl.textContent = '';
+                        }
+                    }
+                } else {
+                    feedbackEl.textContent = '';
+                }
+            } else if (view === 'front') {
+                feedbackEl.textContent = 'TURN SIDEWAYS';
+                feedbackEl.className = 'bad';
+            }
+        }
+
+        function processOverheadPress(landmarks, view) {
+            const leftShoulder = landmarks[11];
+            const leftElbow = landmarks[13];
+            const leftWrist = landmarks[15];
+            
+            const rightShoulder = landmarks[12];
+            const rightElbow = landmarks[14];
+            const rightWrist = landmarks[16];
+
+            if (leftShoulder?.visibility > 0.3 && leftElbow?.visibility > 0.3 && leftWrist?.visibility > 0.3 &&
+                rightShoulder?.visibility > 0.3 && rightElbow?.visibility > 0.3 && rightWrist?.visibility > 0.3) {
+                
+                ctx.fillStyle = '#0f0';
+                [leftShoulder, leftElbow, leftWrist, rightShoulder, rightElbow, rightWrist].forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x * canvas.width, p.y * canvas.height, 8, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+
+                const leftArmAngle = calculateAngle(leftShoulder, leftElbow, leftWrist);
+                const rightArmAngle = calculateAngle(rightShoulder, rightElbow, rightWrist);
+                const armAngle = (leftArmAngle + rightArmAngle) / 2;
+                
+                angleEl.textContent = Math.round(armAngle) + '°';
+
+                if (!isReady) {
+                    if (!readyTimer) {
+                        readyTimer = setTimeout(() => { isReady = true; }, 2000);
+                    }
+                    feedbackEl.textContent = 'HOLD STILL (2s)';
+                    feedbackEl.className = '';
+                } else {
+                    if (armAngle > 100 && armAngle < 130) stage = 'down';
+                    if (armAngle > 150 && stage === 'down') {
+                        stage = 'up';
+                        repCount++;
+                        repsEl.textContent = repCount;
+                        playBeep();
+                    }
+
+                    // Simple lockout feedback + symmetry
+                    const armDiff = Math.abs(leftArmAngle - rightArmAngle);
+                    
+                    if (armDiff > 25) {
+                        feedbackEl.textContent = 'UNEVEN ARMS';
+                        feedbackEl.className = 'warn';
+                    } else if (armAngle > 150) {
+                        feedbackEl.textContent = 'GOOD LOCKOUT!';
+                        feedbackEl.className = 'good';
+                    } else if (armAngle > 130) {
+                        feedbackEl.textContent = 'ALMOST!';
+                        feedbackEl.className = 'warn';
+                    } else {
+                        feedbackEl.textContent = '';
+                    }
+                }
+            }
+        }
+
         function reset() {
             repCount = 0;
             stage = null;
             isReady = false;
+            startKneeAngle = null;
+            startBackAngle = null;
             clearTimeout(readyTimer);
             readyTimer = null;
             repsEl.textContent = '0';
@@ -302,7 +427,9 @@
 
         function quit() {
             video.srcObject?.getTracks().forEach(t => t.stop());
-            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:32px;color:white">Session ended</div>';
+            document.getElementById('container').style.display = 'none';
+            document.getElementById('exerciseSelection').style.display = 'flex';
+            reset();
         }
 
         function toggleVideoFeed() {
@@ -315,6 +442,7 @@
         document.getElementById('reset').onclick = reset;
         document.getElementById('quit').onclick = quit;
         document.getElementById('toggleVideo').onclick = toggleVideoFeed;
+        
         document.addEventListener('keydown', e => {
             if (e.key === 'r' || e.key === 'R') reset();
             if (e.key === 'q' || e.key === 'Q') quit();
@@ -334,15 +462,12 @@
 
         pose.onResults(onResults);
 
-        const camera = new Camera(video, {
-            onFrame: async () => {
-                await pose.send({image: video});
-            },
-            width: 1280,
-            height: 720
+        // Set initial video toggle state
+        document.addEventListener('DOMContentLoaded', () => {
+            const btn = document.getElementById('toggleVideo');
+            btn.textContent = 'VIDEO ON';
+            btn.style.background = '#4CAF50';
         });
-
-        camera.start();
     </script>
 </body>
 </html>
